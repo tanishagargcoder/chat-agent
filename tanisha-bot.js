@@ -2,15 +2,16 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
+require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
 
 app.use(bodyParser.json());
 
-const ACCESS_TOKEN = 'EAApFq9kX05EBO2ZAYe3AkByavdoE3y8NJZAUZCbpZA2qT72xlYoI7EAEq8FC3GN1Oak1Mcgu8zkaAzO12GrwFTdQZCA4H0J4modm7gsazDbFsIi85Md2ySPBJfFm5dDMZBjZBPssK6GV1X4ZBRWd5mNZAv0ZAb4NB9QGhVTjVmUVoI6Ak9br9MFTqPuZBig3uDRkfZCJMPnyzAz41fQoAca4WAKSlF1C5RyuofwZD';
-const PHONE_NUMBER_ID = '683575804840768';
-const VERIFY_TOKEN = 'goweasy_verify';
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
+const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 
 // 🧠 In-memory context store per user
 const userContext = new Map();
