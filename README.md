@@ -14,3 +14,8 @@ This is a Node.js-based WhatsApp Cloud API chatbot for real estate lead qualific
 ```bash
 git clone https://github.com/tanishagargcoder/chat-agent.git
 cd chat-agent
+## 🔐 Note on API Key
+
+To run this project, **you must generate your own WhatsApp Cloud API key** from the [Meta for Developers](https://developers.facebook.com/) platform. The access token and phone number ID used in the bot are **user-specific** and must be kept private.
+
+---
