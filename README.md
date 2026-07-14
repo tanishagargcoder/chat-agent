@@ -72,6 +72,19 @@ In your Meta app's **WhatsApp → Configuration**, set:
 
 Now message your test number on WhatsApp and say **hi** 👋
 
+## ☁️ Deploy to Render (24/7, no laptop needed)
+
+The repo includes a `render.yaml` blueprint:
+
+1. Push the repo to GitHub (already done if you cloned this)
+2. On [Render](https://render.com): **New → Web Service** → connect this GitHub repo
+3. Add environment variables: `ACCESS_TOKEN`, `PHONE_NUMBER_ID`, `VERIFY_TOKEN`, and `GROQ_API_KEY` (free key from [console.groq.com](https://console.groq.com) — used for AI replies in the cloud, since Ollama runs only locally)
+4. Deploy, then set your Meta webhook Callback URL to `https://<your-service>.onrender.com/webhook`
+
+The AI layer is pluggable: **Ollama/Mistral locally → Groq in the cloud → graceful fallback** if neither is available.
+
+> Note: on Render's free plan the service sleeps after ~15 min idle; the first message after a nap takes ~30-50s (Meta retries webhooks, so nothing is lost).
+
 ## 🔐 Security notes
 
 - All credentials live in `.env` (gitignored) — never commit tokens

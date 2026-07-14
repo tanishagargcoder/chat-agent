@@ -8,13 +8,37 @@ require('dotenv').config();
 const ollama = new Ollama();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+
+// 🤖 AI reply: local Ollama (dev) → Groq cloud (production) → null (caller uses fallback text)
+async function aiReply(messages) {
+  try {
+    const ai = await ollama.chat({ model: 'mistral', messages });
+    return ai.message.content;
+  } catch (err) {
+    console.error('⚠️ Ollama unavailable:', err.message);
+  }
+  if (GROQ_API_KEY) {
+    try {
+      const r = await axios.post(
+        'https://api.groq.com/openai/v1/chat/completions',
+        { model: 'llama-3.1-8b-instant', messages, max_tokens: 300 },
+        { headers: { Authorization: `Bearer ${GROQ_API_KEY}` } }
+      );
+      return r.data.choices[0].message.content;
+    } catch (err) {
+      console.error('⚠️ Groq error:', err.response?.status, err.response?.data?.error?.message || err.message);
+    }
+  }
+  return null;
+}
 
 // 🧠 In-memory context store per user
 const userContext = new Map();
@@ -32,6 +56,9 @@ const WELCOME =
   "Hey! 👋 I'm *Tanisha's Property Assistant* 🏡\n\n" +
   "I'll help you find the right property in just a few quick questions.\n\n" +
   "📍 First — *which city* are you looking to buy or rent in?";
+
+// 🩺 Health check (Render pings this)
+app.get('/', (req, res) => res.send('🤖 Tanisha\'s WhatsApp bot is running'));
 
 // 🟢 Verify Webhook
 app.get('/webhook', (req, res) => {
@@ -102,30 +129,23 @@ app.post('/webhook', async (req, res) => {
     }
 
     default: {
-      // 🤖 Lead qualified — free-form questions answered by Mistral (runs locally via Ollama)
-      try {
-        const ai = await ollama.chat({
-          model: 'mistral',
-          messages: [
-            {
-              role: 'system',
-              content:
-                `You are Tanisha's friendly real estate assistant on WhatsApp. ` +
-                `The user is a qualified lead: city=${ctx.city || 'unknown'}, property type=${ctx.type || 'unknown'}, budget=${ctx.budget || 'unknown'}. ` +
-                `Answer real estate questions briefly (2-4 short sentences, WhatsApp style, use an emoji or two). ` +
-                `You may use *asterisks* for bold. If asked something unrelated to real estate, answer helpfully but briefly. ` +
-                `IMPORTANT: You cannot search listings or see actual properties — never claim you "found" properties. ` +
-                `Give general guidance only (localities, loans, process, market tips); the human team shares actual listings.`,
-            },
-            { role: 'user', content: userInput },
-          ],
-        });
-        response = ai.message.content;
-      } catch (err) {
-        console.error('⚠️ Ollama error:', err.message);
-        response =
-          "Thanks for your message! 🙏 Our team will get back to you soon.\n\n_(Type *restart* to start a new property search)_";
-      }
+      // 🤖 Lead qualified — free-form questions answered by AI (local Ollama or Groq cloud)
+      const content = await aiReply([
+        {
+          role: 'system',
+          content:
+            `You are Tanisha's friendly real estate assistant on WhatsApp. ` +
+            `The user is a qualified lead: city=${ctx.city || 'unknown'}, property type=${ctx.type || 'unknown'}, budget=${ctx.budget || 'unknown'}. ` +
+            `Answer real estate questions briefly (2-4 short sentences, WhatsApp style, use an emoji or two). ` +
+            `You may use *asterisks* for bold. If asked something unrelated to real estate, answer helpfully but briefly. ` +
+            `IMPORTANT: You cannot search listings or see actual properties — never claim you "found" properties. ` +
+            `Give general guidance only (localities, loans, process, market tips); the human team shares actual listings.`,
+        },
+        { role: 'user', content: userInput },
+      ]);
+      response =
+        content ||
+        "Thanks for your message! 🙏 Our team will get back to you soon.\n\n_(Type *restart* to start a new property search)_";
       break;
     }
   }
