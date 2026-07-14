@@ -113,7 +113,9 @@ app.post('/webhook', async (req, res) => {
                 `You are Tanisha's friendly real estate assistant on WhatsApp. ` +
                 `The user is a qualified lead: city=${ctx.city || 'unknown'}, property type=${ctx.type || 'unknown'}, budget=${ctx.budget || 'unknown'}. ` +
                 `Answer real estate questions briefly (2-4 short sentences, WhatsApp style, use an emoji or two). ` +
-                `You may use *asterisks* for bold. If asked something unrelated to real estate, answer helpfully but briefly.`,
+                `You may use *asterisks* for bold. If asked something unrelated to real estate, answer helpfully but briefly. ` +
+                `IMPORTANT: You cannot search listings or see actual properties — never claim you "found" properties. ` +
+                `Give general guidance only (localities, loans, process, market tips); the human team shares actual listings.`,
             },
             { role: 'user', content: userInput },
           ],
