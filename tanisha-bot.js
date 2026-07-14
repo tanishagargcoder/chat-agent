@@ -162,19 +162,23 @@ app.post('/webhook', async (req, res) => {
       break;
 
     case 'ask_type': {
+      // remember whichever detail the user gives, in any order
       const type = findPropertyType(userInput);
       const usage = findUsage(userInput);
-      if (!type) {
+      if (type) ctx.type = titleCase(type);
+      if (usage) ctx.usage = usage;
+
+      if (!ctx.type) {
         if (looksLikeQuestion(userInput)) {
           response = await answerThenReask(ctx, userInput, `🏠 Which one would you like — *Flat*, *Villa* or *Plot*?`);
+        } else if (usage) {
+          response = `Got it — *${usage.toLowerCase()}* ✅\n\n🏠 And which property type?\n\n• *Flat*\n• *Villa*\n• *Plot*`;
         } else {
           response = "Please pick a property type 🏠\n\n• *Flat*\n• *Villa*\n• *Plot*\n\n_(or ask me anything — e.g. \"flat vs villa?\")_";
         }
         break;
       }
-      ctx.type = titleCase(type);
-      if (usage) {
-        ctx.usage = usage;
+      if (ctx.usage) {
         ctx.step = 'ask_budget';
         response = `Perfect 👌 *${ctx.type}* for *${ctx.usage.toLowerCase()}* — noted!\n\n${ASK_BUDGET}`;
       } else {
@@ -187,6 +191,8 @@ app.post('/webhook', async (req, res) => {
 
     case 'ask_usage': {
       const usage = findUsage(userInput);
+      const newType = findPropertyType(userInput);
+      if (newType) ctx.type = titleCase(newType); // user changed their mind about the type
       if (!usage) {
         if (looksLikeQuestion(userInput)) {
           response = await answerThenReask(ctx, userInput, ASK_USAGE);
