@@ -1,20 +1,26 @@
 {
-  "name": "groweasy-chat-agent",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "whatsapp-chat-agent",
+  "version": "2.0.0",
+  "description": "AI-powered real estate lead qualification bot on the WhatsApp Cloud API, with local Mistral (Ollama) replies",
+  "main": "tanisha-bot.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node tanisha-bot.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "whatsapp",
+    "cloud-api",
+    "chatbot",
+    "ollama",
+    "mistral",
+    "real-estate"
+  ],
+  "author": "Tanisha Garg",
   "license": "ISC",
-  "description": "",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.18.1",
+    "body-parser": "^2.3.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "openai": "^5.3.0",
-    "readline-sync": "^1.4.10",
-    "twilio": "^5.7.1"
+    "ollama": "^0.6.3"
   }
 }
