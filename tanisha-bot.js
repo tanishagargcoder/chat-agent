@@ -126,13 +126,38 @@ app.get('/webhook', (req, res) => {
   }
 });
 
+// 🧾 Already-processed message ids (Meta retries deliveries — never reply twice)
+const processedIds = new Set();
+
 // 🔄 Handle incoming messages
 app.post('/webhook', async (req, res) => {
+  // ACK immediately so Meta never times out and re-delivers while we think
+  res.sendStatus(200);
+
   const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
   const sender = message?.from;
   const userInput = message?.text?.body?.trim().toLowerCase();
 
-  if (!sender || !userInput) return res.sendStatus(200);
+  if (!sender || !userInput) return;
+
+  // Skip duplicates (Meta retries the same message id on timeouts)
+  if (message.id) {
+    if (processedIds.has(message.id)) {
+      console.log(`🔁 Duplicate delivery ignored: ${message.id}`);
+      return;
+    }
+    processedIds.add(message.id);
+    if (processedIds.size > 1000) {
+      processedIds.delete(processedIds.values().next().value);
+    }
+  }
+
+  // Skip stale messages (old queued deliveries flushed after downtime)
+  const ageSec = Date.now() / 1000 - Number(message.timestamp || 0);
+  if (message.timestamp && ageSec > 300) {
+    console.log(`⏭️ Stale message (${Math.round(ageSec / 60)} min old) ignored: ${userInput}`);
+    return;
+  }
 
   console.log(`📩 Message from ${sender}: ${userInput}`);
 
@@ -140,7 +165,7 @@ app.post('/webhook', async (req, res) => {
   if (userInput === 'restart' || isGreeting(userInput)) {
     userContext.set(sender, { step: 'ask_city' });
     await sendMessage(sender, WELCOME);
-    return res.sendStatus(200);
+    return;
   }
 
   const ctx = userContext.get(sender) || { step: 'ask_city' };
@@ -237,7 +262,6 @@ app.post('/webhook', async (req, res) => {
 
   userContext.set(sender, ctx);
   await sendMessage(sender, response);
-  res.sendStatus(200);
 });
 
 // 📤 Send a WhatsApp message via the Cloud API
